@@ -9,7 +9,8 @@
     "dev:billing": "pnpm --filter billing-service start:dev",
     "dev:provisioning": "pnpm --filter provisioning-service start:dev",
     "infra:up": "docker compose up -d",
-    "infra:down": "docker compose down"
+    "infra:down": "docker compose down",
+    "ws:listen": "pnpm --filter activation-api ws:listen"
   },
   "packageManager": "pnpm@10.28.0",
   "engines": {

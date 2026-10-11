@@ -4,6 +4,7 @@ import { Activation } from './activation.entity';
 import { ActivationAggregatorService } from './activation-aggregator.service';
 import { ActivationResultsController } from './activation-results.controller';
 import { ActivationsController } from './activations.controller';
+import { ActivationsGateway } from './activations.gateway';
 import { ActivationsService } from './activations.service';
 
 @Module({
@@ -11,6 +12,6 @@ import { ActivationsService } from './activations.service';
   imports: [TypeOrmModule.forFeature([Activation])],
   // ActivationsController atiende HTTP; ActivationResultsController atiende eventos de Kafka.
   controllers: [ActivationsController, ActivationResultsController],
-  providers: [ActivationsService, ActivationAggregatorService],
+  providers: [ActivationsService, ActivationAggregatorService, ActivationsGateway],
 })
 export class ActivationsModule {}

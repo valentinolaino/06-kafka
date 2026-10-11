@@ -7,7 +7,8 @@
     "build": "nest build",
     "start": "nest start",
     "start:dev": "nest start --watch",
-    "start:prod": "node dist/main"
+    "start:prod": "node dist/main",
+    "ws:listen": "node scripts/ws-listen.cjs"
   },
   "dependencies": {
     "@activation-poc/contracts": "workspace:*",
@@ -16,19 +17,23 @@
     "@nestjs/core": "^11.0.0",
     "@nestjs/microservices": "^11.0.0",
     "@nestjs/platform-express": "^11.0.0",
+    "@nestjs/platform-socket.io": "^11.0.0",
     "@nestjs/typeorm": "^11.0.0",
+    "@nestjs/websockets": "^11.0.0",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.1",
     "kafkajs": "^2.2.4",
     "pg": "^8.13.0",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1",
+    "socket.io": "^4.8.0",
     "typeorm": "^0.3.20"
   },
   "devDependencies": {
     "@nestjs/cli": "^11.0.0",
     "@types/express": "^5.0.0",
     "@types/node": "^22.0.0",
+    "socket.io-client": "^4.8.0",
     "typescript": "^5.6.0"
   }
 }

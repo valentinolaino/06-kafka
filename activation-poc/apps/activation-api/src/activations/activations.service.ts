@@ -5,6 +5,8 @@ import { Repository } from 'typeorm';
 import { createEnvelope, EVENT_TYPES } from '@activation-poc/contracts';
 import { EventPublisher } from '@activation-poc/kafka-toolkit';
 import { Activation } from './activation.entity';
+import { toActivationView } from './activation-view';
+import { ActivationsGateway } from './activations.gateway';
 import { CreateActivationDto } from './dto/create-activation.dto';
 
 @Injectable()
@@ -15,6 +17,7 @@ export class ActivationsService {
     // Repository<Activation> es el objeto de TypeORM para leer/escribir en la tabla activations.
     @InjectRepository(Activation) private readonly repo: Repository<Activation>,
     private readonly publisher: EventPublisher,
+    private readonly gateway: ActivationsGateway,
   ) {}
 
   /**
@@ -36,7 +39,7 @@ export class ActivationsService {
 
     // 2) Guardamos ANTES de publicar: cuando billing y provisioning respondan, la activación
     //    tiene que existir en la base para que el agregador pueda actualizarla.
-    await this.repo.save(
+    const saved = await this.repo.save(
       this.repo.create({
         id: activationId,
         customerId: dto.customerId,
@@ -47,6 +50,9 @@ export class ActivationsService {
         history: [{ eventType: event.eventType, at: event.occurredAt }],
       }),
     );
+
+    // La UI ve la activación (PENDING) en cuanto existe.
+    this.gateway.notify(saved);
 
     // 3) Publicamos directo en Kafka (sección 08 del PDF, fases 1 a 3).
     //    RIESGO CONOCIDO: si el servicio se cae entre el paso 2 y este, la activación queda
@@ -63,7 +69,6 @@ export class ActivationsService {
     if (!activation) {
       throw new NotFoundException(`No existe la activación ${id}`);
     }
-    const { id: activationId, ...rest } = activation;
-    return { activationId, ...rest };
+    return toActivationView(activation);
   }
 }

@@ -12,6 +12,12 @@ export const config = {
   port: Number(process.env.PORT ?? 3000),
   databaseUrl:
     process.env.DATABASE_URL ?? 'postgres://postgres:postgres@localhost:15432/activation_db',
+  // Orígenes del navegador que pueden llamar a la API y al WebSocket (CORS).
+  // 5173 es el puerto por defecto de Vite, donde va a correr demo-ui. Se pueden poner varios separados por coma.
+  corsOrigins: (process.env.CORS_ORIGIN ?? 'http://localhost:5173')
+    .split(',')
+    .map((o) => o.trim())
+    .filter(Boolean),
   kafkaClientId: process.env.KAFKA_CLIENT_ID ?? 'activation-api',
   // Consumer group con el que activation-api escucha billing.events y provisioning.events.
   kafkaGroupId: process.env.KAFKA_GROUP_ID ?? CONSUMER_GROUPS.ACTIVATION_API,

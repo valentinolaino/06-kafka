@@ -11,6 +11,9 @@ async function bootstrap(): Promise<void> {
   // Permite que Nest cierre la conexión con Kafka al apagar el servicio (Ctrl+C).
   app.enableShutdownHooks();
 
+  // CORS: sin esto el navegador bloquea las llamadas de la UI (otro puerto) a la API.
+  app.enableCors({ origin: config.corsOrigins });
+
   // Valida automáticamente el body de cada request contra el DTO correspondiente.
   //  - whitelist: descarta los campos que el DTO no declara.
   //  - transform: convierte el JSON recibido en una instancia real del DTO.

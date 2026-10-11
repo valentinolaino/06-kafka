@@ -13,6 +13,7 @@ import {
 import { EventPublisher } from '@activation-poc/kafka-toolkit';
 import { Activation, StepResult } from './activation.entity';
 import { decide, StepOutcome } from './aggregation';
+import { ActivationsGateway } from './activations.gateway';
 
 /** Eventos que billing y provisioning publican y que este servicio consume. */
 export type ResultEvent =
@@ -46,6 +47,7 @@ export class ActivationAggregatorService {
   constructor(
     private readonly dataSource: DataSource,
     private readonly publisher: EventPublisher,
+    private readonly gateway: ActivationsGateway,
   ) {}
 
   /**
@@ -61,14 +63,15 @@ export class ActivationAggregatorService {
     const activationId = event.correlationId;
     this.logger.log(`${event.eventType} recibido (activación ${activationId})`);
 
-    const outgoing = await this.dataSource.transaction(async (manager) => {
+    const { outgoing, changed } = await this.dataSource.transaction(async (manager) => {
+      const nothing = { outgoing: null as DomainEvent | null, changed: null as Activation | null };
       const activation = await manager.findOne(Activation, {
         where: { id: activationId },
         lock: { mode: 'pessimistic_write' },
       });
       if (!activation) {
         this.logger.warn(`No existe la activación ${activationId}; se ignora ${event.eventType}`);
-        return null;
+        return nothing;
       }
 
       const incomingEntry = { eventType: event.eventType, at: event.occurredAt };
@@ -78,13 +81,13 @@ export class ActivationAggregatorService {
       if (!outcome) {
         activation.history = [...activation.history, incomingEntry];
         await manager.save(activation);
-        return null;
+        return { outgoing: null, changed: activation };
       }
 
       const decision = decide(activation, outcome);
       if (decision.kind === 'duplicate') {
         this.logger.warn(`${event.eventType} repetido para ${activationId}; se ignora`);
-        return null;
+        return nothing;
       }
 
       // Resultado posterior al estado final: solo historial (sección 06 del PDF).
@@ -92,7 +95,7 @@ export class ActivationAggregatorService {
         activation.history = [...activation.history, incomingEntry];
         await manager.save(activation);
         this.logger.log(`${activationId} ya está ${activation.status}: ${event.eventType} solo se registra`);
-        return null;
+        return { outgoing: null, changed: activation };
       }
 
       // Guardamos el resultado del servicio en "steps".
@@ -134,9 +137,11 @@ export class ActivationAggregatorService {
       ];
       await manager.save(activation);
       this.logger.log(`Activación ${activationId} -> ${activation.status}`);
-      return out;
+      return { outgoing: out, changed: activation };
     });
 
+    // El cambio ya está confirmado en la base: se avisa a la UI y recién después se publica en Kafka.
+    if (changed) this.gateway.notify(changed);
     if (outgoing) {
       await this.publisher.publish(outgoing);
     }
