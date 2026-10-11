@@ -1,0 +1,553 @@
+/* ---------- Tokens ---------- */
+:root {
+  --ink: #13233a;
+  --ink-soft: #4b5d72;
+  --mist: #e8edf1;
+  --panel: #f8fafb;
+  --line: #ccd6dd;
+
+  --signal: #0e7c86; /* acciones y "en curso" */
+  --ok: #1f8a5b;
+  --fail: #d4403a;
+  --comp: #b97a0b; /* compensación */
+  --neutral: #6c7d8e;
+
+  --font: 'Schibsted Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --mono: 'Spline Sans Mono', ui-monospace, 'Cascadia Mono', Consolas, monospace;
+  --radius: 10px;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--mist);
+  color: var(--ink);
+  font: 400 1rem/1.45 var(--font);
+  -webkit-font-smoothing: antialiased;
+}
+
+h1,
+h2,
+h3,
+p,
+ol,
+ul {
+  margin: 0;
+}
+
+ul,
+ol {
+  padding: 0;
+  list-style: none;
+}
+
+:focus-visible {
+  outline: 3px solid var(--signal);
+  outline-offset: 2px;
+}
+
+/* ---------- Estructura ---------- */
+.app {
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 24px 16px 48px;
+}
+
+.topbar {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.topbar h1 {
+  font-size: 1.75rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+}
+
+.topbar-sub {
+  margin-top: 4px;
+  color: var(--ink-soft);
+}
+
+.live {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+  padding: 6px 12px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--panel);
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.live-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--fail);
+}
+
+.live[data-on='true'] .live-dot {
+  background: var(--ok);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--ok) 25%, transparent);
+}
+
+.layout {
+  display: grid;
+  grid-template-columns: minmax(290px, 340px) minmax(0, 1fr);
+  gap: 24px;
+  align-items: start;
+}
+
+.panel {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+
+/* ---------- Formulario ---------- */
+.form {
+  position: sticky;
+  top: 16px;
+  display: grid;
+  gap: 18px;
+  padding: 20px;
+}
+
+.form h2,
+.feed-head h2,
+.empty h2 {
+  font-size: 1.15rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.field {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  min-width: 0;
+}
+
+.field > label,
+.field > legend {
+  padding: 0;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.field input[type='text'],
+.field input:not([type]),
+.field select {
+  width: 100%;
+  min-height: 42px;
+  padding: 8px 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+  color: var(--ink);
+  font: inherit;
+}
+
+.field input:not([type]) {
+  font-family: var(--mono);
+  font-size: 0.9375rem;
+}
+
+.segments {
+  display: grid;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.segment {
+  --c: var(--ok);
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1px;
+  padding: 9px 12px 9px 16px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+  cursor: pointer;
+}
+
+.segment[data-value='billing'],
+.segment[data-value='provisioning'] {
+  --c: var(--fail);
+}
+
+/* barra de color a la izquierda: anticipa cómo va a terminar la activación */
+.segment::before {
+  content: '';
+  position: absolute;
+  inset: 8px auto 8px 6px;
+  width: 3px;
+  border-radius: 2px;
+  background: var(--c);
+  opacity: 0.35;
+}
+
+.segment input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.segment-label {
+  font-weight: 600;
+}
+
+.segment-hint {
+  color: var(--ink-soft);
+  font-size: 0.8125rem;
+}
+
+.segment:has(input:checked) {
+  border-color: var(--c);
+  background: color-mix(in srgb, var(--c) 8%, #fff);
+}
+
+.segment:has(input:checked)::before {
+  opacity: 1;
+}
+
+.segment:has(input:focus-visible) {
+  outline: 3px solid var(--signal);
+  outline-offset: 2px;
+}
+
+.form-error {
+  padding: 10px 12px;
+  border-left: 4px solid var(--fail);
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--fail) 9%, #fff);
+  font-size: 0.9375rem;
+}
+
+.primary {
+  min-height: 46px;
+  border: 0;
+  border-radius: 8px;
+  background: var(--signal);
+  color: #fff;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.primary:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--signal) 85%, #000);
+}
+
+.primary:disabled {
+  opacity: 0.6;
+  cursor: progress;
+}
+
+/* ---------- Listado ---------- */
+.feed-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.link-btn {
+  padding: 4px 0;
+  border: 0;
+  background: none;
+  color: var(--ink-soft);
+  font: inherit;
+  font-size: 0.875rem;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.link-btn:hover {
+  color: var(--ink);
+}
+
+.empty {
+  display: grid;
+  gap: 8px;
+  max-width: 46ch;
+  padding: 28px 4px;
+  color: var(--ink-soft);
+}
+
+.empty h2 {
+  color: var(--ink);
+}
+
+.empty-warn {
+  padding: 10px 12px;
+  border-left: 4px solid var(--comp);
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--comp) 10%, #fff);
+  color: var(--ink);
+}
+
+.cards {
+  display: grid;
+  gap: 16px;
+}
+
+/* ---------- Tarjeta de activación ---------- */
+.card {
+  --accent: var(--neutral);
+  display: grid;
+  gap: 14px;
+  padding: 18px 20px 14px;
+  border-left: 5px solid var(--accent);
+}
+
+.card[data-status='IN_PROGRESS'] {
+  --accent: var(--signal);
+}
+.card[data-status='ACTIVE'] {
+  --accent: var(--ok);
+}
+.card[data-status='FAILED'] {
+  --accent: var(--fail);
+}
+
+.card-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.card-head h3 {
+  font-size: 1.0625rem;
+  font-weight: 700;
+}
+
+.card-plan {
+  margin-left: 6px;
+  color: var(--ink-soft);
+  font-weight: 500;
+}
+
+.card-id {
+  margin-top: 2px;
+  color: var(--ink-soft);
+  font: 400 0.8125rem var(--mono);
+}
+
+.pill {
+  --c: var(--neutral);
+  flex-shrink: 0;
+  padding: 3px 12px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--c) 14%, #fff);
+  color: color-mix(in srgb, var(--c) 80%, #000);
+  font-size: 0.875rem;
+  font-weight: 700;
+}
+
+.pill[data-status='IN_PROGRESS'] {
+  --c: var(--signal);
+}
+.pill[data-status='ACTIVE'] {
+  --c: var(--ok);
+}
+.pill[data-status='FAILED'] {
+  --c: var(--fail);
+}
+
+.card-reason {
+  color: var(--ink-soft);
+  font-size: 0.9375rem;
+}
+
+/* ---------- Recorrido entre servicios ---------- */
+.trace {
+  display: grid;
+  grid-template-columns: 124px minmax(0, 1fr);
+  height: 138px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+  overflow: hidden;
+}
+
+.trace-lanes {
+  display: grid;
+  grid-template-rows: repeat(3, 1fr);
+  border-right: 1px solid var(--line);
+  background: var(--mist);
+}
+
+.trace-lane {
+  display: flex;
+  align-items: center;
+  padding: 0 10px;
+  color: var(--ink-soft);
+  font: 500 0.75rem var(--mono);
+  white-space: nowrap;
+}
+
+.trace-lane + .trace-lane {
+  border-top: 1px solid var(--line);
+}
+
+.trace-plot {
+  --guide: color-mix(in srgb, var(--line) 70%, #fff);
+  position: relative;
+  background:
+    linear-gradient(var(--guide), var(--guide)) 0 16.667% / 100% 1px no-repeat,
+    linear-gradient(var(--guide), var(--guide)) 0 50% / 100% 1px no-repeat,
+    linear-gradient(var(--guide), var(--guide)) 0 83.333% / 100% 1px no-repeat;
+}
+
+.trace-plot svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.trace-line {
+  --c: var(--neutral);
+  stroke: var(--c);
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  vector-effect: non-scaling-stroke;
+}
+
+.trace-line[data-tone='comp'] {
+  stroke-dasharray: 5 5;
+}
+
+.trace-dot {
+  --c: var(--neutral);
+  position: absolute;
+  width: 18px;
+  height: 18px;
+  border: 3px solid #fff;
+  border-radius: 50%;
+  background: var(--c);
+  box-shadow: 0 0 0 1px var(--c);
+  transform: translate(-50%, -50%);
+  animation: arrive 0.7s ease-out;
+}
+
+/* un punto aparece cuando llega su evento: el anillo se expande una sola vez */
+@keyframes arrive {
+  0% {
+    box-shadow:
+      0 0 0 1px var(--c),
+      0 0 0 0 color-mix(in srgb, var(--c) 45%, transparent);
+  }
+  100% {
+    box-shadow:
+      0 0 0 1px var(--c),
+      0 0 0 14px color-mix(in srgb, var(--c) 0%, transparent);
+  }
+}
+
+[data-tone='ok'] {
+  --c: var(--ok);
+}
+[data-tone='fail'] {
+  --c: var(--fail);
+}
+[data-tone='comp'] {
+  --c: var(--comp);
+}
+[data-tone='neutral'] {
+  --c: var(--neutral);
+}
+
+/* ---------- Lista de eventos ---------- */
+.events {
+  display: grid;
+}
+
+.event {
+  display: grid;
+  grid-template-columns: 14px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 0;
+}
+
+.event + .event {
+  border-top: 1px solid var(--mist);
+}
+
+.event-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--c);
+}
+
+.event-body {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px 10px;
+  min-width: 0;
+}
+
+.event-label {
+  font-weight: 600;
+}
+
+.event-type {
+  color: var(--ink-soft);
+  font: 400 0.75rem var(--mono);
+}
+
+.event-time {
+  color: var(--ink-soft);
+  font: 400 0.8125rem var(--mono);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* ---------- Pantalla angosta (incluye media pantalla junto a Kafka UI) ---------- */
+@media (max-width: 880px) {
+  .layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .form {
+    position: static;
+  }
+}
+
+@media (max-width: 520px) {
+  .topbar {
+    flex-direction: column;
+  }
+  .trace {
+    grid-template-columns: 104px minmax(0, 1fr);
+  }
+  .trace-lane {
+    padding: 0 6px;
+    font-size: 0.6875rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .trace-dot {
+    animation: none;
+  }
+}
