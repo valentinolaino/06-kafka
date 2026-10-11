@@ -1,3 +1,5 @@
+import { CONSUMER_GROUPS } from '@activation-poc/contracts';
+
 /**
  * Configuración del servicio. Cada valor se puede pisar con una variable de entorno;
  * si no existe, se usa el valor por defecto, que coincide con el docker-compose.yml
@@ -9,7 +11,8 @@
 export const config = {
   port: Number(process.env.PORT ?? 3000),
   databaseUrl:
-    process.env.DATABASE_URL ??
-    "postgres://postgres:postgres@localhost:15432/activation_db",
-  kafkaClientId: process.env.KAFKA_CLIENT_ID ?? "activation-api",
+    process.env.DATABASE_URL ?? 'postgres://postgres:postgres@localhost:15432/activation_db',
+  kafkaClientId: process.env.KAFKA_CLIENT_ID ?? 'activation-api',
+  // Consumer group con el que activation-api escucha billing.events y provisioning.events.
+  kafkaGroupId: process.env.KAFKA_GROUP_ID ?? CONSUMER_GROUPS.ACTIVATION_API,
 };
