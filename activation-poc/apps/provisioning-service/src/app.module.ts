@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { EventPublisherModule } from '@activation-poc/kafka-toolkit';
+import { EventConsumerModule, EventPublisherModule } from '@activation-poc/kafka-toolkit';
 import { ProvisioningModule } from './provisioning/provisioning.module';
 import { config } from './config';
 
@@ -16,6 +16,9 @@ import { config } from './config';
 
     // Cliente Kafka para publicar los resultados de provisioning.
     EventPublisherModule.register({ clientId: config.kafkaClientId }),
+
+    // Idempotencia (processed_events), reintentos y DLQ para todo lo que provisioning consume.
+    EventConsumerModule.register({ groupId: config.kafkaGroupId }),
 
     ProvisioningModule,
   ],

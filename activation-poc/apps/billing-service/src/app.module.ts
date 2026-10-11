@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { EventPublisherModule } from '@activation-poc/kafka-toolkit';
+import { EventConsumerModule, EventPublisherModule } from '@activation-poc/kafka-toolkit';
 import { BillingModule } from './billing/billing.module';
 import { config } from './config';
 
@@ -16,6 +16,9 @@ import { config } from './config';
 
     // Cliente Kafka para publicar los resultados de billing.
     EventPublisherModule.register({ clientId: config.kafkaClientId }),
+
+    // Idempotencia (processed_events), reintentos y DLQ para todo lo que billing consume.
+    EventConsumerModule.register({ groupId: config.kafkaGroupId }),
 
     BillingModule,
   ],

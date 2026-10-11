@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { EventPublisherModule } from '@activation-poc/kafka-toolkit';
+import { EventConsumerModule, EventPublisherModule } from '@activation-poc/kafka-toolkit';
 import { ActivationsModule } from './activations/activations.module';
 import { config } from './config';
 
@@ -19,6 +19,9 @@ import { config } from './config';
 
     // Cliente Kafka para publicar eventos (disponible en todo el servicio).
     EventPublisherModule.register({ clientId: config.kafkaClientId }),
+
+    // Idempotencia (processed_events), reintentos y DLQ para los resultados que activation-api consume.
+    EventConsumerModule.register({ groupId: config.kafkaGroupId }),
 
     ActivationsModule,
   ],

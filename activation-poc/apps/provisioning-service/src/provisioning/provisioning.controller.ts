@@ -1,6 +1,7 @@
 import { Controller } from '@nestjs/common';
-import { EventPattern, Payload } from '@nestjs/microservices';
+import { Ctx, EventPattern, KafkaContext, Payload } from '@nestjs/microservices';
 import { ActivationRequestedEvent, TOPICS } from '@activation-poc/contracts';
+import { EventConsumer } from '@activation-poc/kafka-toolkit';
 import { ProvisioningService } from './provisioning.service';
 
 /**
@@ -8,14 +9,20 @@ import { ProvisioningService } from './provisioning.service';
  */
 @Controller()
 export class ProvisioningController {
-  constructor(private readonly provisioning: ProvisioningService) {}
+  constructor(
+    private readonly provisioning: ProvisioningService,
+    private readonly consumer: EventConsumer,
+  ) {}
 
   /**
    * provisioning escucha el MISMO topic que billing, pero con su propio consumer group:
    * por eso cada ActivationRequested llega a los dos, y trabajan en paralelo (RF-04).
+   * EventConsumer.process aplica idempotencia, reintentos y DLQ.
    */
   @EventPattern(TOPICS.ACTIVATION_REQUESTED)
-  async onActivationRequested(@Payload() event: ActivationRequestedEvent): Promise<void> {
-    await this.provisioning.handleActivationRequested(event);
+  onActivationRequested(@Payload() payload: unknown, @Ctx() context: KafkaContext): Promise<void> {
+    return this.consumer.process<ActivationRequestedEvent>(payload, context, (event, manager) =>
+      this.provisioning.handleActivationRequested(event, manager),
+    );
   }
 }

@@ -44,4 +44,16 @@ export class EventPublisher implements OnModuleInit, OnModuleDestroy {
       `${event.eventType} publicado en ${topic} (eventId=${event.eventId}, correlationId=${event.correlationId})`,
     );
   }
+
+  /**
+   * Publica un mensaje tal cual, sin armar el sobre. Lo usa el consumidor para mandar a la DLQ
+   * el mensaje ORIGINAL (aunque esté roto) junto con el motivo del error en los headers.
+   */
+  async publishRaw(
+    topic: string,
+    message: { key?: string | null; value: string; headers?: Record<string, string> },
+  ): Promise<void> {
+    await lastValueFrom(this.client.emit(topic, message), { defaultValue: undefined });
+    this.logger.warn(`Mensaje enviado a ${topic}`);
+  }
 }
