@@ -1,0 +1,16 @@
+{
+  "name": "@activation-poc/contracts",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Contratos de eventos compartidos: topics, sobre común y tipos de eventos",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "clean": "rm -rf dist"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "typescript": "^5.6.0"
+  }
+}
