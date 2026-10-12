@@ -1,0 +1,21 @@
+# Imagen de la Demo UI (React + Vite). Compila la app y la sirve con "vite preview".
+# VITE_API_URL es la dirección de la API VISTA DESDE EL NAVEGADOR (no desde otro contenedor):
+# por eso es localhost:3000, el puerto que activation-api publica en tu máquina.
+FROM node:22-slim
+
+ARG VITE_API_URL=http://localhost:3000
+ENV VITE_API_URL=${VITE_API_URL}
+
+RUN npm install -g pnpm@10.28.0
+RUN pnpm config set store-dir /pnpm-store
+
+WORKDIR /repo
+COPY . .
+
+RUN --mount=type=cache,id=pnpm-store,target=/pnpm-store \
+    pnpm install --frozen-lockfile --filter demo-ui... \
+ && pnpm --filter demo-ui build
+
+WORKDIR /repo/apps/demo-ui
+EXPOSE 5173
+CMD ["pnpm", "exec", "vite", "preview", "--host", "0.0.0.0", "--port", "5173", "--strictPort"]

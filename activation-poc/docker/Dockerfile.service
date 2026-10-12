@@ -1,0 +1,23 @@
+# Imagen para cualquier servicio NestJS del monorepo. Se elige cuál con el argumento APP:
+#   docker build -f docker/Dockerfile.service --build-arg APP=billing-service .
+# El contexto es la raíz del repo, porque cada servicio usa las librerías de libs/.
+FROM node:22-slim
+
+ARG APP
+ENV APP=${APP}
+
+RUN npm install -g pnpm@10.28.0
+RUN pnpm config set store-dir /pnpm-store
+
+WORKDIR /repo
+COPY . .
+
+# 1) instala solo las dependencias del servicio y de las librerías que usa
+# 2) compila las librerías (contracts y kafka-toolkit) y después el servicio
+RUN --mount=type=cache,id=pnpm-store,target=/pnpm-store \
+    pnpm install --frozen-lockfile --filter "${APP}..." \
+ && pnpm --filter "@activation-poc/*" build \
+ && pnpm --filter "${APP}" build
+
+WORKDIR /repo/apps/${APP}
+CMD ["node", "dist/main"]

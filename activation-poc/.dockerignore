@@ -1,0 +1,7 @@
+# Lo que NO se copia dentro de las imágenes (se reinstala/recompila adentro).
+.git
+**/node_modules
+**/dist
+**/*.log
+.env
+docs

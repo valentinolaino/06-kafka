@@ -1,6 +1,28 @@
-# Infraestructura de la POC (Fase 1). Los servicios NestJS y la UI se agregan en pasos siguientes.
-# Levantar todo:  docker compose up -d
+# POC Activación de Servicios con Kafka: infraestructura + servicios NestJS + Demo UI.
+#
+#   Levantar todo (la primera vez compila las imágenes, tarda varios minutos):
+#       docker compose up -d --build
+#   Demo UI: http://localhost:5173   Kafka UI: http://localhost:8080   Mailhog: http://localhost:8025
+#
+#   Escenario 4 (escalar billing):    docker compose up -d --scale billing-service=2
+#   Escenario 5 (servicio loyalty):   docker compose --profile loyalty up -d loyalty-service
+#
+# OJO: los servicios de este archivo usan los puertos 3000 y 5173 y los mismos consumer groups que
+# los "pnpm dev:*". No corras las dos formas a la vez: frená los pnpm antes de levantar Docker.
 name: activation-poc
+
+# Variables y dependencias comunes a todos los servicios de la POC.
+x-app-env: &app-env
+  # Dentro de Docker, Kafka se alcanza por el listener INTERNAL (kafka:19092), no por localhost:9092.
+  KAFKA_BROKERS: kafka:19092
+
+x-app-deps: &app-deps
+  kafka:
+    condition: service_healthy
+  kafka-init:
+    condition: service_completed_successfully # los topics ya existen
+  postgres:
+    condition: service_healthy
 
 services:
   # ---------- Kafka (modo KRaft, 1 broker, sin ZooKeeper) ----------
@@ -27,11 +49,7 @@ services:
       # Los topics se crean explícitamente con create-topics.sh, no automáticamente
       KAFKA_AUTO_CREATE_TOPICS_ENABLE: "false"
     healthcheck:
-      test:
-        [
-          "CMD-SHELL",
-          "/opt/kafka/bin/kafka-broker-api-versions.sh --bootstrap-server localhost:19092 > /dev/null 2>&1",
-        ]
+      test: ["CMD-SHELL", "/opt/kafka/bin/kafka-broker-api-versions.sh --bootstrap-server localhost:19092 > /dev/null 2>&1"]
       interval: 10s
       timeout: 10s
       retries: 10
@@ -67,7 +85,7 @@ services:
     image: postgres:16-alpine
     container_name: postgres
     ports:
-      # En tu PC el puerto es 5433 (el 5432 suele estar ocupado por un PostgreSQL instalado).
+      # En tu PC el puerto es 15432: el 5432 y el 5433 suelen estar ocupados por un PostgreSQL instalado.
       # Dentro de Docker, los servicios siguen hablando con postgres:5432.
       - "15432:5432"
     environment:
@@ -90,6 +108,99 @@ services:
     ports:
       - "1025:1025" # SMTP (lo usa notification-service)
       - "8025:8025" # interfaz web
+
+  # ---------- Servicios NestJS ----------
+  # Los puertos de los servicios que solo consumen de Kafka no se publican: nadie los llama por HTTP.
+  # Tampoco tienen container_name, para poder escalarlos con --scale (escenario 4).
+
+  activation-api:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.service
+      args:
+        APP: activation-api
+    ports:
+      - "3000:3000"
+    environment:
+      <<: *app-env
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/activation_db
+      # La UI corre en el navegador de tu máquina, en localhost:5173.
+      CORS_ORIGIN: http://localhost:5173
+    depends_on: *app-deps
+
+  billing-service:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.service
+      args:
+        APP: billing-service
+    environment:
+      <<: *app-env
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/billing_db
+    depends_on: *app-deps
+
+  provisioning-service:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.service
+      args:
+        APP: provisioning-service
+    environment:
+      <<: *app-env
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/provisioning_db
+    depends_on: *app-deps
+
+  notification-service:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.service
+      args:
+        APP: notification-service
+    environment:
+      <<: *app-env
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/notification_db
+      SMTP_HOST: mailhog
+      SMTP_PORT: "1025"
+    depends_on:
+      <<: *app-deps
+      mailhog:
+        condition: service_started
+
+  crm-analytics-service:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.service
+      args:
+        APP: crm-analytics-service
+    environment:
+      <<: *app-env
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/crm_analytics_db
+    depends_on: *app-deps
+
+  # Escenario 5: solo se levanta si se pide el profile "loyalty".
+  loyalty-service:
+    profiles: ["loyalty"]
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.service
+      args:
+        APP: loyalty-service
+    environment:
+      <<: *app-env
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/loyalty_db
+    depends_on: *app-deps
+
+  # ---------- Demo UI ----------
+  demo-ui:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.ui
+      args:
+        VITE_API_URL: http://localhost:3000
+    ports:
+      - "5173:5173"
+    depends_on:
+      - activation-api
 
 volumes:
   postgres-data:
