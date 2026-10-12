@@ -5,3 +5,5 @@ CREATE DATABASE billing_db;
 CREATE DATABASE provisioning_db;
 CREATE DATABASE notification_db;
 CREATE DATABASE crm_analytics_db;
+-- loyalty-service (escenario 5 de la demo) tiene su propia base.
+CREATE DATABASE loyalty_db;

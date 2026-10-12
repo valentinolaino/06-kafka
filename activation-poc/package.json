@@ -10,6 +10,7 @@
     "dev:provisioning": "pnpm --filter provisioning-service start:dev",
     "dev:notification": "pnpm --filter notification-service start:dev",
     "dev:crm": "pnpm --filter crm-analytics-service start:dev",
+    "dev:loyalty": "pnpm --filter loyalty-service start:dev",
     "infra:up": "docker compose up -d",
     "infra:down": "docker compose down",
     "ws:listen": "pnpm --filter activation-api ws:listen",

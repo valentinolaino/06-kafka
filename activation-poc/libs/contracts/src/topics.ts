@@ -26,4 +26,5 @@ export const CONSUMER_GROUPS = {
   ACTIVATION_API: 'activation-api',
   NOTIFICATION: 'notification-svc',
   CRM_ANALYTICS: 'crm-analytics',
+  LOYALTY: 'loyalty-svc',
 } as const;
