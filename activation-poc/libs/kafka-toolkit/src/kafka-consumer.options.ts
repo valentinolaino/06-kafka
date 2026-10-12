@@ -30,6 +30,12 @@ export function kafkaConsumerOptions(options: KafkaConsumerOptions): KafkaOption
         // Los topics los crea create-topics.sh; no queremos que el consumidor los cree solo.
         allowAutoTopicCreation: false,
       },
+      run: {
+        // Commit manual: el offset se confirma desde EventConsumer cuando el mensaje terminó de
+        // procesarse (ver event-consumer.ts). Con autoCommit activo, kafkajs lo confirmaba solo,
+        // aunque el mensaje siguiera a medio procesar.
+        autoCommit: false,
+      },
       subscribe: {
         // Si el grupo es nuevo, empieza desde el primer mensaje del topic y no desde "ahora".
         // Así un servicio que arranca tarde no pierde eventos (RNF-05).

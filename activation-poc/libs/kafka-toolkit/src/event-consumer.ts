@@ -104,6 +104,10 @@ function errorMessage(err: unknown): string {
  *  4. DLQ: si sigue fallando, publica el mensaje original en "<topic>.dlq" con el motivo en los
  *     headers y sigue con el siguiente: un mensaje roto no frena al resto de la partición.
  *  5. Después de confirmar la transacción ejecuta el "afterCommit" (publicar el evento de salida).
+ *  6. COMMIT MANUAL DEL OFFSET: recién cuando termina todo lo anterior (procesado, descartado por
+ *     duplicado o enviado a la DLQ) le avisa a Kafka "ya leí hasta acá". Si el servicio se cae en
+ *     el medio, Kafka vuelve a entregar el mensaje y la idempotencia evita el doble efecto.
+ *     Si ni siquiera se puede publicar en la DLQ, el offset NO se confirma.
  */
 @Injectable()
 export class EventConsumer implements OnModuleInit, OnModuleDestroy {
@@ -130,6 +134,16 @@ export class EventConsumer implements OnModuleInit, OnModuleDestroy {
   }
 
   async process<E extends DomainEvent = DomainEvent>(
+    payload: unknown,
+    context: KafkaContext,
+    handler: EventHandler<E>,
+  ): Promise<void> {
+    // Si handle() lanza (la DLQ no respondió), no se llega al commit: Kafka reentrega el mensaje.
+    await this.handle(payload, context, handler);
+    await this.commitOffset(context);
+  }
+
+  private async handle<E extends DomainEvent>(
     payload: unknown,
     context: KafkaContext,
     handler: EventHandler<E>,
@@ -162,6 +176,22 @@ export class EventConsumer implements OnModuleInit, OnModuleDestroy {
       } catch (err) {
         await this.sendToDlq(context, `Falló la publicación posterior: ${errorMessage(err)}`, this.attemptsOf(err));
       }
+    }
+  }
+
+  /**
+   * Confirma en Kafka que este mensaje ya está resuelto. Kafka espera el offset del PRÓXIMO
+   * mensaje a leer, por eso se suma 1. Si el commit falla no es grave: el mensaje se reentregará
+   * y la idempotencia lo descartará, así que solo se avisa en el log.
+   */
+  private async commitOffset(context: KafkaContext): Promise<void> {
+    const offset = (BigInt(context.getMessage().offset) + 1n).toString();
+    try {
+      await context.getConsumer().commitOffsets([
+        { topic: context.getTopic(), partition: context.getPartition(), offset },
+      ]);
+    } catch (err) {
+      this.logger.warn(`No se pudo confirmar el offset ${offset} de ${context.getTopic()}: ${errorMessage(err)}`);
     }
   }
 
